@@ -2,9 +2,9 @@
 import os, sys, time, json, math, uuid, datetime as dt
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional
-
 import requests
 import yaml
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config" / "params.yaml"
@@ -89,10 +89,12 @@ def main():
     with open(run_dir / f"page_{page:05d}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
-    meta = (data.get("meta") or {}).get("pagination") or {}
-    total      = int(meta.get("total") or 0)
-    last_page  = int(meta.get("last_page") or 0)
-    per_page   = int(meta.get("per_page") or limit)
+    raw_meta = data.get("meta") or {}
+    meta = raw_meta.get("pagination", raw_meta)
+
+    total     = int(meta.get("total") or 0)
+    last_page = int(meta.get("last_page") or 0)
+    per_page  = int(meta.get("per_page") or limit)
     got_items  = len(data.get("data") or [])
     print(f"[INFO] Page {page} OK | items={got_items} | total={total} | last_page={last_page} | per_page={per_page}")
 
@@ -100,7 +102,7 @@ def main():
     # - If 'pages' in config is None or 0 => pull ALL until last_page (or until no items)
     # - Else, pull up to 'pages' starting from current 'page'
     pull_all = (pages_cfg in (None, 0, "all"))
-    target_last_page = last_page if pull_all and last_page else (page + int(pages_cfg) - 1 if not pull_all else page)
+    target_last_page = last_page or math.ceil(total / per_page)
 
     # Loop next pages
     current_page = page
@@ -135,8 +137,9 @@ def main():
             json.dump(data, f, ensure_ascii=False)
 
         items = len(data.get("data") or [])
-        meta = (data.get("meta") or {}).get("pagination") or {}
-        last_page = int(meta.get("last_page") or last_page)  # refresh if provided
+        raw_meta = data.get("meta") or {}
+        meta = raw_meta.get("pagination", raw_meta)
+        last_page = int(meta.get("last_page") or last_page)
         print(f"[INFO] Page {current_page} OK | items={items}")
 
         if items == 0:
@@ -146,7 +149,7 @@ def main():
     # Write run metadata
     run_meta = {
         "run_id": run_id,
-        "started_at": dt.datetime.utcnow().isoformat() + "Z",
+        "started_at": datetime.now(timezone.utc).isoformat(),
         "url": url,
         "params_base": base_params,
         "headers": headers,
