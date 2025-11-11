@@ -13,7 +13,7 @@ source:
     order_direction: DESC
     status: aktif
     page: 1        # ✅ mulai dari page 1
-    limit: 38
+    limit: 100
 
 
   headers:
@@ -23,7 +23,7 @@ source:
     User-Agent: "magang-intel-fetcher/1.0 (+contact:team@example.com)"
 
 run:
-  pages: 38              # berapa halaman mau diambil per run; naikkan bila perlu
+  pages: 100              # berapa halaman mau diambil per run; naikkan bila perlu
   sleep_ms: 200          # jeda antar request (hormati rate limit)
   timeout_s: 30          # timeout per request
   max_retries: 3         # retry untuk 5xx/429

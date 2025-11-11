@@ -107,22 +107,18 @@ def main():
         print("[ERROR] Tidak ada data untuk diproses.")
         return
 
-    # 1️⃣ Flatten
     rows = [flatten_vacancy(x) for x in data]
     df = pd.DataFrame(rows)
 
-    # 2️⃣ Parse field JSON
     df["program_studi"] = df["program_studi_raw"].apply(safe_parse_json_field)
     df["jenjang"] = df["jenjang_raw"].apply(safe_parse_json_field)
     df.drop(columns=["program_studi_raw", "jenjang_raw"], inplace=True)
 
-    # 3️⃣ Compute kolom turunan
     df["competition_ratio"] = df.apply(
         lambda x: compute_competition_ratio(x["jumlah_terdaftar"], x["jumlah_kuota"]), axis=1
     )
     df["days_to_deadline"] = df["tanggal_pendaftaran_akhir"].apply(compute_days_to_deadline)
 
-    # 4️⃣ Ekstraksi skill (gabungkan judul + deskripsi)
     print("[INFO] Ekstraksi skill dari judul + deskripsi...")
     res = df.apply(
         lambda x: extract_from_title_and_desc(
