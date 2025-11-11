@@ -149,7 +149,7 @@ df = load_live()
 # Tombol refresh manual
 if st.button("🔄 Refresh now"):
     load_live.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 # Indikator kesegaran data
 ts = df.attrs.get("last_updated_ts")
