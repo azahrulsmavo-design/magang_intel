@@ -1,0 +1,2 @@
+data/clean/*.parquet filter=lfs diff=lfs merge=lfs -text
+output/figures/*.png filter=lfs diff=lfs merge=lfs -text

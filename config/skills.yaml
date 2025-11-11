@@ -1,0 +1,46 @@
+schema_version: 1
+normalize:
+  lowercase: true
+  strip_punctuation: true
+aliases:
+  "powerbi": "power bi"
+  "ms excel": "excel"
+
+weights:
+  data_core: 1.0
+  programming: 0.9
+  bi_tools: 0.8
+  databases: 0.8
+  governance_quality: 0.7
+  marketing_ops: 0.5
+  soft_skills: 0.0
+
+skills:
+  data_core:
+    terms: ["analisis data","statistik","etl","kpi","insight"]
+    regex: []
+  programming:
+    terms: ["python","r","sql","pandas","numpy"]
+    regex: []
+  bi_tools:
+    terms: ["excel","power bi","tableau","dashboard"]
+    regex: []
+  databases:
+    terms: ["postgresql","mysql","bigquery","data warehouse"]
+    regex: []
+  governance_quality:
+    terms: ["kurasi","katalog","validasi","kualitas data","tkdn","sni"]
+    regex: []
+  marketing_ops:
+    terms: ["analisis pasar","segmentasi","mapping","reporting"]
+    regex: []
+  soft_skills:
+    terms: ["komunikasi","presentasi","teamwork","problem solving"]
+    regex: []
+
+stopwords: ["data","laporan","dokumen","prosedur","kebijakan","pengumuman","jadwal"]
+
+extraction:
+  min_token_len: 2
+  prefer_phrase_match: true
+  max_skills_per_post: 30

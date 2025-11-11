@@ -1,0 +1,22 @@
+{
+  "run_id": "run_20251111_120236_2a69155a",
+  "started_at": "2025-11-11T05:04:35.340689Z",
+  "url": "https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif",
+  "params_base": {
+    "order_by": "jumlah_kuota",
+    "order_direction": "DESC",
+    "page": 1,
+    "limit": 100
+  },
+  "headers": {
+    "Accept": "application/json",
+    "Accept-Encoding": "gzip, deflate",
+    "User-Agent": "magang-intel-fetcher/1.0 (+contact:team@example.com)"
+  },
+  "first_page": 1,
+  "limit": 100,
+  "pull_all": false,
+  "last_seen_page": 20,
+  "total_from_api": 24708,
+  "notes": "RAW JSON disimpan per halaman. Lanjutkan normalisasi di src/prepare.py"
+}

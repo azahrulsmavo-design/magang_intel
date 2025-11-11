@@ -1,0 +1,64 @@
+# =========================
+# Konfigurasi pengambilan data MagangHub
+# =========================
+
+project:
+  name: magang-intel
+  timezone: "Asia/Jakarta"
+
+source:
+  name: maganghub_vacancies_aktif
+  url: "https://maganghub.kemnaker.go.id/be/v1/api/list/vacancies-aktif"
+
+  # Query params default (bisa dioverride saat run)
+  params:
+    order_by: "jumlah_kuota"        # opsi lain: created_at, updated_at (jika ada)
+    order_direction: "DESC"         # ASC / DESC
+    page: 1
+    limit: 100                      # pakai 100 untuk efisiensi
+    # q: ""                         # aktifkan kalau endpoint mendukung pencarian bebas
+
+  headers:
+    Accept: "application/json"
+    # Hindari zstd agar requests bisa auto-decode; gzip/deflate aman di requests
+    Accept-Encoding: "gzip, deflate"
+    User-Agent: "magang-intel-fetcher/1.0 (+contact:team@example.com)"
+
+run:
+  pages: 20              # berapa halaman mau diambil per run; naikkan bila perlu
+  sleep_ms: 200          # jeda antar request (hormati rate limit)
+  timeout_s: 30          # timeout per request
+  max_retries: 3         # retry untuk 5xx/429
+  retry_backoff_s: 5     # tunggu 5s saat 429 atau error server
+  respect_rate_limit: true
+  # jika server kirim header Retry-After, gunakan nilai itu
+
+output:
+  raw_dir: "data/raw"                        # simpan JSON mentah per halaman
+  clean_path: "data/clean/vacancies.parquet" # hasil normalize/enrich
+  logs_dir: "logs"                           # log run
+
+enrich:
+  # Field turunan yang dihitung di prepare.py
+  compute:
+    - competition_ratio      # jumlah_terdaftar / jumlah_kuota
+    - days_to_deadline       # tgl_pendaftaran_akhir - today (Asia/Jakarta)
+    - skills_extracted       # dari config/skills.yaml
+    - is_data_related        # flag dari kata kunci data/analitik
+    - priority_score         # skor sederhana, bisa disesuaikan
+
+filters:                    # opsional: batasi saat build dataset
+  provinces: []             # contoh: ["DKI JAKARTA", "JAWA BARAT"]
+  education_levels: []      # contoh: ["Sarjana","Diploma"]
+  min_quota: 0
+  max_competition_ratio:    # isi angka jika ingin filter peluang besar
+  only_verified: true       # ref_status_posisi.nama_status_posisi == "Terverifikasi"
+
+export:
+  tables_dir: "output/tables"
+  figures_dir: "output/figures"
+  top_n: 20                 # jumlah baris untuk tabel/grafik “top”
+
+# Catatan:
+# - Endpoint ini terlihat publik tanpa auth; tetap hormati ToS & robots.
+# - Jika nanti ada header/param tambahan (mis. province_id, q), tambahkan di source.params.
