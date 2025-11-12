@@ -8,62 +8,26 @@ import streamlit as st
 # ================== CONFIG ==================
 st.set_page_config(page_title="Peluang Magang — Fokus Persaingan", layout="wide")
 
-# Jika data disimpan di HF Datasets, isi repo & nama berkasnya:
-REPO_ID  = "Azahrul/magang-intel-data"       # ganti jika perlu
-PREF_FILE = "vacancies_scored.parquet"       # prioritas
-FALLBACK_FILE = "vacancies.parquet"          # fallback
+REPO_ID  = "Azahrul/magang-intel-data"
+PREF_FILE = "vacancies_scored.parquet"
+FALLBACK_FILE = "vacancies.parquet"
 
 LOCAL_CANDIDATES = [
     Path("data/clean/vacancies_scored.parquet"),
     Path("data/clean/vacancies.parquet"),
 ]
 
+# Hard guard to avoid blowing memory on Spaces
+MAX_RENDER_ROWS = 20000  # feel free to raise on local
+
 # ================== HELPERS ==================
 def _read_parquet_safely(path: str | Path) -> pd.DataFrame:
-    """Coba baca dengan pyarrow, fallback ke fastparquet jika perlu."""
     try:
-        return pd.read_parquet(path)  # pyarrow default
+        return pd.read_parquet(path)
     except Exception:
         return pd.read_parquet(path, engine="fastparquet")
 
-def _ensure_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Pastikan kolom-kolom penting ada dan bertipe benar."""
-    # Kolom minimal yang sering dipakai
-    for col in ["posisi", "nama_perusahaan", "nama_provinsi"]:
-        if col not in df.columns:
-            df[col] = None
-
-    # Pastikan numeric untuk hitung rasio
-    for col in ["jumlah_kuota", "jumlah_terdaftar"]:
-        if col not in df.columns:
-            df[col] = np.nan
-        # coerce to numeric
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    # competition_ratio
-    if "competition_ratio" not in df.columns:
-        # hindari bagi nol
-        df["competition_ratio"] = np.where(
-            df["jumlah_kuota"] > 0,
-            df["jumlah_terdaftar"] / df["jumlah_kuota"],
-            np.nan
-        )
-
-    # kategori_posisi
-    if "kategori_posisi" not in df.columns:
-        df["kategori_posisi"] = df["posisi"].apply(simplify_role)
-
-    # skills_norm
-    if "skills_norm" not in df.columns:
-        if "skills_extracted" in df.columns:
-            df["skills_norm"] = df["skills_extracted"].apply(to_list_of_str)
-        else:
-            df["skills_norm"] = [[] for _ in range(len(df))]
-
-    return df
-
 def to_list_of_str(x):
-    """Normalisasi berbagai tipe (None, list, ndarray, json string) → list[str] lowercase."""
     if x is None:
         return []
     if isinstance(x, (list, tuple, set)):
@@ -72,7 +36,6 @@ def to_list_of_str(x):
         return [str(i).lower() for i in x.tolist()]
     if isinstance(x, str):
         s = x.strip()
-        # coba parse json-like list
         if (s.startswith("[") and s.endswith("]")) or (s.startswith("(") and s.endswith(")")):
             try:
                 obj = json.loads(s.replace("(", "[").replace(")", "]"))
@@ -84,7 +47,6 @@ def to_list_of_str(x):
     return []
 
 def simplify_role(title: str) -> str:
-    """Kategori profesi sederhana agar mudah dibaca."""
     if not isinstance(title, str):
         return "Other"
     t = title.lower()
@@ -102,22 +64,43 @@ def simplify_role(title: str) -> str:
         return "Public Sector"
     return "Other"
 
+def _ensure_columns(df: pd.DataFrame) -> pd.DataFrame:
+    for col in ["posisi", "nama_perusahaan", "nama_provinsi"]:
+        if col not in df.columns:
+            df[col] = None
+
+    for col in ["jumlah_kuota", "jumlah_terdaftar"]:
+        if col not in df.columns:
+            df[col] = np.nan
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # safer ratio (avoid inf)
+    if "competition_ratio" not in df.columns:
+        df["competition_ratio"] = np.where(
+            (df["jumlah_kuota"] > 0) & df["jumlah_kuota"].notna(),
+            df["jumlah_terdaftar"] / df["jumlah_kuota"],
+            np.nan
+        )
+
+    if "kategori_posisi" not in df.columns:
+        df["kategori_posisi"] = df["posisi"].apply(simplify_role)
+
+    if "skills_norm" not in df.columns:
+        if "skills_extracted" in df.columns:
+            df["skills_norm"] = df["skills_extracted"].apply(to_list_of_str)
+        else:
+            df["skills_norm"] = [[] for _ in range(len(df))]
+
+    return df
+
 # ================== DATA LOADER ==================
 @st.cache_data(ttl=15*60, max_entries=4, show_spinner="Updating data...")
 def load_live() -> pd.DataFrame:
-    """
-    Urutan:
-    1) Coba parquet lokal (cepat saat dev / jika kamu upload file kecil).
-    2) Jika tidak ada → unduh dari HF Datasets (LFS).
-    3) (Opsional) merge incremental dari API (tambahkan sendiri).
-    """
-    # 1) Lokal
     for p in LOCAL_CANDIDATES:
         if p.exists():
             base_df = _read_parquet_safely(p)
             break
     else:
-        # 2) HF Datasets
         try:
             from huggingface_hub import hf_hub_download
             try:
@@ -129,16 +112,6 @@ def load_live() -> pd.DataFrame:
             st.error(f"Gagal memuat data dari HF Datasets: {e}")
             return pd.DataFrame()
 
-    # 3) (Opsional) incremental fetch — tambahkan fungsi kamu di sini.
-    # recent_df = fetch_recent_pages(limit_pages=3)
-    # if not recent_df.empty:
-    #     key = "id" if "id" in recent_df.columns else None
-    #     if key and key in base_df.columns:
-    #         base_df = (pd.concat([recent_df, base_df], ignore_index=True)
-    #                      .drop_duplicates(subset=[key], keep="first"))
-    #     else:
-    #         base_df = pd.concat([recent_df, base_df], ignore_index=True).drop_duplicates()
-
     base_df = _ensure_columns(base_df)
     base_df.attrs["last_updated_ts"] = time.time()
     return base_df
@@ -146,12 +119,10 @@ def load_live() -> pd.DataFrame:
 # ================== UI ==================
 df = load_live()
 
-# Tombol refresh manual
 if st.button("🔄 Refresh now"):
     load_live.clear()
     st.rerun()
 
-# Indikator kesegaran data
 ts = df.attrs.get("last_updated_ts")
 if ts:
     st.caption(f"Last updated: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))} (auto refresh setiap 15 menit)")
@@ -162,6 +133,7 @@ st.caption("Semakin kecil rasio **(Pendaftar/Kuota)**, semakin besar peluang.")
 # -------- Sidebar Filters --------
 with st.sidebar:
     st.header("⚙️ Filter")
+
     provinsi_opts = ["(Semua)"] + sorted([p for p in df["nama_provinsi"].dropna().unique().tolist() if p])
     prov_choice = st.selectbox("Provinsi", provinsi_opts, index=0)
 
@@ -178,7 +150,12 @@ with st.sidebar:
         min_value=0.0, max_value=50.0, value=10.0, step=0.5
     )
 
-    top_n = st.slider("Top N hasil", 10, 300, 50, 10)
+    # <<< CHANGED: kontrol jumlah hasil >>>
+    top_choice = st.selectbox(
+        "Jumlah hasil yang ditampilkan",
+        options=["Semua", 50, 100, 300, 1000, 2000, 5000, 10000],
+        index=2  # default 300
+    )
 
     st.caption("Tip: Set rasio ≤ 2.0 untuk fokus pada peluang sangat tinggi.")
 
@@ -195,17 +172,14 @@ if kat_choice != "(Semua)":
 if keyword.strip():
     q = q[q["posisi"].astype(str).str.contains(keyword.strip(), case=False, na=False)]
 
-# valid ratio & batas
 q = q[q["competition_ratio"].notna()]
 q = q[q["competition_ratio"] <= max_ratio]
 
-# match_count
 if want_skills:
     q = q.assign(match_count=q["skills_norm"].apply(lambda lst: sum(1 for s in lst if s in want_skills)))
 else:
     q = q.assign(match_count=0)
 
-# Urutkan: match desc → ratio asc → kuota desc
 q = q.sort_values(by=["match_count", "competition_ratio", "jumlah_kuota"],
                   ascending=[False, True, False])
 
@@ -229,16 +203,26 @@ cols_show = [
     "jumlah_kuota", "jumlah_terdaftar", "competition_ratio", "match_count"
 ]
 present = [c for c in cols_show if c in q.columns]
-st.dataframe(q.head(top_n)[present], use_container_width=True)
+
+# <<< CHANGED: logic "Semua" + safety cap >>>
+if top_choice == "Semua":
+    q_show = q[present].head(MAX_RENDER_ROWS)
+    if len(q) > MAX_RENDER_ROWS:
+        st.info(f"Menampilkan {MAX_RENDER_ROWS:,} baris pertama (dibatasi untuk performa).")
+else:
+    n = int(top_choice)
+    q_show = q[present].head(n)
+
+st.dataframe(q_show, use_container_width=True)
 
 # Download CSV
-csv_bytes = q.head(top_n)[present].to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
-st.download_button("⬇️ Download CSV (Top N)", data=csv_bytes, file_name="peluang_magang_topN.csv", mime="text/csv")
+csv_bytes = q_show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+st.download_button("⬇️ Download CSV", data=csv_bytes, file_name="peluang_magang.csv", mime="text/csv")
 
 st.divider()
 
 # -------- Charts --------
-import matplotlib.pyplot as plt  # impor disini supaya lazy-load
+import matplotlib.pyplot as plt
 
 left, right = st.columns(2)
 
