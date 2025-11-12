@@ -1,0 +1,119 @@
+name: Update dataset (MagangHub)
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"     # tiap 12 jam
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install pandas pyarrow requests pyyaml
+
+      # 1) Jalankan pipeline: fetch -> prepare -> score
+      - name: Run fetch + prepare + score
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python src/fetch.py
+          python -m src.prepare
+          python -m src.score || echo "[WARN] score.py optional"
+
+      # 2) Arsip RAW jadi zip + upload artifact (retensi 30 hari)
+      - name: Archive RAW to zip
+        run: |
+          python - <<'PY'
+          import glob, shutil, os
+          runs = sorted([p for p in glob.glob('data/raw/run_*') if os.path.isdir(p)])
+          if runs:
+              latest = runs[-1]
+              shutil.make_archive(latest, 'zip', latest)
+              print("Zipped:", latest + '.zip')
+          else:
+              print("No raw folder found.")
+          PY
+
+      - name: Upload RAW artifact (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: maganghub-raw-${{ github.run_id }}
+          path: data/raw/run_*.zip
+          retention-days: 30
+
+      # 3) Clone HF Space repo untuk ambil parquet lama
+      - name: Clone HF Space repository (current app data)
+        run: |
+          git clone https://huggingface.co/spaces/Azahrul/magang-intel hf-space
+          ls -lah hf-space/data/clean || true
+
+      # 4) Safety check & merge: hindari penurunan baris
+      - name: Safety check & merge with previous
+        run: |
+          python - <<'PY'
+          import pathlib, pandas as pd, sys
+
+          NEW = pathlib.Path("data/clean/vacancies.parquet")
+          OLD = pathlib.Path("hf-space/data/clean/vacancies.parquet")
+
+          if not NEW.exists():
+              print("[ERROR] New parquet not found:", NEW)
+              sys.exit(1)
+
+          df_new = pd.read_parquet(NEW)
+          print(f"[INFO] New rows: {len(df_new)}")
+
+          if OLD.exists():
+              df_old = pd.read_parquet(OLD)
+              print(f"[INFO] Old rows: {len(df_old)}")
+
+              if len(df_new) < len(df_old):
+                  print("[WARN] New < Old → Merging to avoid regression...")
+                  key = "id_posisi" if "id_posisi" in df_new.columns else None
+                  if key:
+                      df_all = pd.concat([df_old, df_new], ignore_index=True)
+                      if "updated_at" in df_all.columns:
+                          df_all["updated_at"] = pd.to_datetime(df_all["updated_at"], errors="coerce")
+                          df_all = df_all.sort_values([key, "updated_at"], ascending=[True, False])
+                      df_all = df_all.drop_duplicates(subset=[key], keep="first")
+                      print(f"[INFO] After union: {len(df_all)} rows")
+                      df_all.to_parquet(NEW, index=False)
+                  else:
+                      print("[WARN] No 'id_posisi' column. Keeping OLD instead.")
+                      df_old.to_parquet(NEW, index=False)
+          else:
+              print("[INFO] Old parquet not found. First upload scenario.")
+          PY
+
+      # 5) Salin parquet final ke repo Space + commit & push
+      - name: Update parquet in HF Space and push
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cp -f data/clean/vacancies.parquet hf-space/data/clean/vacancies.parquet || true
+          if [ -f data/clean/vacancies_scored.parquet ]; then
+            cp -f data/clean/vacancies_scored.parquet hf-space/data/clean/vacancies_scored.parquet
+          fi
+
+          cd hf-space
+          git lfs install
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/clean/vacancies*.parquet
+          git commit -m "Auto-update parquet ($(date -u +'%Y-%m-%d %H:%M:%S'))" || echo "No parquet changes"
+          git push https://$HF_TOKEN@huggingface.co/spaces/Azahrul/magang-intel main
