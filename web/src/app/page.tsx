@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Filters } from '@/components/Filters';
 import { Stats } from '@/components/Stats';
 import { Charts } from '@/components/Charts';
-import { Github, X, Filter as FilterIcon, Search } from "lucide-react";
+import { Github, X, Filter as FilterIcon, Search, BarChart3 } from "lucide-react";
 import MagangHubInfo from '@/components/MagangHubInfo';
 import TimelinePemagangan from '@/components/TimelinePemagangan';
 import { ResultsSection } from '@/components/ResultsSection';
@@ -158,6 +158,13 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/laporan"
+              className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Laporan</span>
+            </Link>
             <Link
               href="/cek-lamaran"
               className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100"
