@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Filters } from '@/components/Filters';
 import { Stats } from '@/components/Stats';
 import { Charts } from '@/components/Charts';
-import { Github, Filter as FilterIcon, X } from 'lucide-react';
+import { Github, X, Filter as FilterIcon, Search } from "lucide-react";
 import MagangHubInfo from '@/components/MagangHubInfo';
 import TimelinePemagangan from '@/components/TimelinePemagangan';
 import { ResultsSection } from '@/components/ResultsSection';
@@ -156,15 +157,24 @@ export default function Home() {
             </div>
           </div>
 
-          <a
-            href="https://github.com/Azahrulsmavo-design/magang_intel"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
-          >
-            <Github className="w-4 h-4" />
-            <span className="hidden sm:inline">Dokumentasi</span>
-          </a>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/cek-lamaran"
+              className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Cek Lamaran</span>
+            </Link>
+            <a
+              href="https://github.com/Azahrulsmavo-design/magang_intel"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50"
+            >
+              <Github className="w-4 h-4" />
+              <span className="hidden sm:inline">Dokumentasi</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -220,15 +230,20 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Stats and Charts only */}
           <div className="lg:col-span-9 space-y-8">
             <Stats {...stats} />
 
             <Charts data={filteredData} />
+          </div>
+        </div>
+      </div>
 
-            <div id="results">
-              <ResultsSection jobs={filteredData} />
-            </div>
+      {/* Full-Width Results Section */}
+      <div className="w-full bg-gradient-to-b from-slate-50 to-white border-t border-slate-200 mt-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div id="results">
+            <ResultsSection jobs={filteredData} />
           </div>
         </div>
       </div>
