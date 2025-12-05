@@ -16,24 +16,37 @@ body {
 
 /* ==== ROOT THEME ==== */
 :root {
-  --bg-main: #e7e6ff;
-  --bg-soft: #f4f4ff;
-  --ink-main: #050816;
-  --ink-muted: #4b4b63;
-  --accent-main: #7ea2ff;
-  --accent-dark: #5e86ff;
-  --accent-soft: #dfe4ff;
-  --border-soft: #cfcdf9;
-  --radius-lg: 24px;
-  --radius-md: 18px;
-  --shadow-card: 0 18px 45px rgba(33, 37, 63, 0.18);
+  /* ==== IOS PASTEL THEME ==== */
+  --bg-main: #FDFBF7;
+  /* Creamy White */
+  --bg-soft: #F2F2F7;
+  /* IOS System Gray 6 */
+  --ink-main: #1C1C1E;
+  /* IOS System Gray */
+  --ink-muted: #8E8E93;
+  /* IOS System Gray 2 */
+
+  /* Pastel Accents */
+  --accent-main: #FF9F0A;
+  /* IOS Warm Orange equivalent but softer */
+  --accent-blue: #007AFF;
+  --accent-soft: #E5F1FB;
+
+  --border-soft: #E5E5EA;
+  /* IOS Separator */
+
+  --radius-lg: 20px;
+  /* Super Ellipse feel */
+  --radius-md: 14px;
+
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
 /* import font kalau pakai plain HTML */
 
 body {
-  font-family: var(--font-space-grotesk), "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   background: var(--bg-main);
   color: var(--ink-main);
 }
@@ -52,14 +65,24 @@ body {
   padding: 0 1.5rem;
 }
 
+/* ====== UTILITIES ====== */
+.glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
 /* ====== NAVBAR ====== */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 40;
-  backdrop-filter: blur(14px);
-  background: rgba(231, 230, 255, 0.9);
-  border-bottom: 1px solid rgba(207, 205, 249, 0.8);
+  background: rgba(253, 251, 247, 0.8);
+  /* Pastel Translucent */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .navbar-inner {

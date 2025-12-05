@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const PHASES = [
     {
@@ -34,10 +35,36 @@ export default function TimelinePemagangan() {
                 Jadwal Pelaksanaan
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <motion.div
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={{
+                    hidden: { opacity: 0 },
+                    show: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.1 }
+                    }
+                }}
+                className="grid grid-cols-1 md:grid-cols-4 gap-4"
+            >
                 {PHASES.map((phase, idx) => (
-                    <div
+                    <motion.div
                         key={idx}
+                        variants={{
+                            hidden: { opacity: 0, y: 20, scale: 0.96, filter: 'blur(10px)' },
+                            show: {
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                filter: 'blur(0)',
+                                transition: {
+                                    type: "spring",
+                                    stiffness: 260,
+                                    damping: 20
+                                }
+                            }
+                        }}
                         className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                     >
                         <div className="flex items-center gap-2 mb-2">
@@ -54,9 +81,9 @@ export default function TimelinePemagangan() {
                         <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">
                             {phase.description}
                         </p>
-                    </div>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
         </section>
     );
 }

@@ -11,6 +11,9 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Magang Intel – Internship Competition Viewer",
   description: "Temukan lowongan dengan persaingan terendah di MagangHub.",
+  icons: {
+    icon: '/person.svg',
+  },
 };
 
 export default function RootLayout({

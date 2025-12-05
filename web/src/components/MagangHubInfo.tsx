@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 type Phase = {
     name: string;
@@ -85,7 +86,13 @@ export default function MagangHubInfo() {
     const phase = phases[activeIndex];
 
     return (
-        <div className="w-full py-12 px-6 md:px-16 bg-gradient-to-b from-white to-blue-50 rounded-3xl mt-10 shadow-xl border border-slate-200">
+        <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.98, filter: 'blur(10px)' }}
+            whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0)' }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+            className="w-full py-12 px-6 md:px-16 bg-gradient-to-b from-white to-blue-50 rounded-3xl mt-10 shadow-xl border border-slate-200"
+        >
 
             {/* Judul */}
             <h1 className="text-4xl md:text-6xl font-black tracking-tight text-slate-900 mb-4">
@@ -97,7 +104,13 @@ export default function MagangHubInfo() {
             </p>
 
             {/* Countdown */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xl shadow-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-xl shadow-md"
+            >
                 <p className="text-sm font-semibold tracking-wide text-indigo-600 uppercase mb-1">
                     Fase Berjalan Sekarang
                 </p>
@@ -112,11 +125,17 @@ export default function MagangHubInfo() {
                 <p className="text-xs text-slate-500 mt-2">
                     Berakhir pada {new Date(phase.end).toLocaleDateString("id-ID")}
                 </p>
-            </div>
+            </motion.div>
 
             {/* Kontak */}
             <div className="grid md:grid-cols-3 gap-6 mt-12">
-                <div className="p-5 bg-white rounded-2xl shadow border border-slate-200">
+                <motion.div
+                    initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
+                    whileInView={{ opacity: 1, y: 0, filter: 'blur(0)' }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="p-5 bg-white rounded-2xl shadow border border-slate-200"
+                >
                     <h3 className="font-bold text-slate-900 mb-3 text-lg">
                         Layanan Informasi
                     </h3>
@@ -126,9 +145,15 @@ export default function MagangHubInfo() {
                         <li>• Perusahaan: <b>0813 2064 789</b></li>
                         <li>• Peserta: <b>0813 2064 787</b></li>
                     </ul>
-                </div>
+                </motion.div>
 
-                <div className="p-5 bg-white rounded-2xl shadow border border-slate-200">
+                <motion.div
+                    initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
+                    whileInView={{ opacity: 1, y: 0, filter: 'blur(0)' }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="p-5 bg-white rounded-2xl shadow border border-slate-200"
+                >
                     <h3 className="font-bold text-slate-900 mb-3 text-lg">
                         Media Resmi
                     </h3>
@@ -145,9 +170,15 @@ export default function MagangHubInfo() {
                             </a>
                         </li>
                     </ul>
-                </div>
+                </motion.div>
 
-                <div className="p-5 bg-white rounded-2xl shadow border border-slate-200 flex flex-col justify-between">
+                <motion.div
+                    initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
+                    whileInView={{ opacity: 1, y: 0, filter: 'blur(0)' }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                    className="p-5 bg-white rounded-2xl shadow border border-slate-200 flex flex-col justify-between"
+                >
                     <div>
                         <h3 className="font-bold text-slate-900 mb-3 text-lg">
                             Akses Cepat
@@ -167,13 +198,13 @@ export default function MagangHubInfo() {
                             </a>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Catatan */}
             <p className="text-xs text-slate-500 mt-10 text-center">
                 © 2025 Kementerian Ketenagakerjaan Republik Indonesia — Halaman ini hanya untuk simulasi.
             </p>
-        </div>
+        </motion.div>
     );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
+import { motion } from 'framer-motion';
 
 interface ChartsProps {
     data: any[];
@@ -43,7 +44,13 @@ export function Charts({ data }: ChartsProps) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[500px]">
+            <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.96, filter: 'blur(10px)' }}
+                whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0)' }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[500px]"
+            >
                 <div className="mb-6">
                     <h3 className="text-lg font-bold text-slate-900">Provinsi dengan Perusahaan Terbanyak</h3>
                     <p className="text-sm text-slate-500">Top 10 provinsi berdasarkan jumlah perusahaan unik</p>
@@ -77,9 +84,15 @@ export function Charts({ data }: ChartsProps) {
                         Insight: Konsentrasi perusahaan tertinggi biasanya berpusat di pulau Jawa.
                     </p>
                 </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[500px]">
+            <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.96, filter: 'blur(10px)' }}
+                whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0)' }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1], delay: 0.1 }}
+                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[500px]"
+            >
                 <div className="mb-6">
                     <h3 className="text-lg font-bold text-slate-900">Posisi Paling Diminati</h3>
                     <p className="text-sm text-slate-500">Top 10 posisi berdasarkan jumlah pendaftar</p>
@@ -113,7 +126,7 @@ export function Charts({ data }: ChartsProps) {
                         Insight: Posisi administratif dan data entry cenderung memiliki persaingan ketat.
                     </p>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

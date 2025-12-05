@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { ArrowUp, ArrowDown, ChevronsUpDown, Star } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronsUpDown, Star, ExternalLink, Download, Search, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Assuming Vacancy interface matches what we have in page.tsx, but simplified for this component
 interface Vacancy {
+    id_posisi: string;
     posisi: string;
     nama_perusahaan: string;
     nama_provinsi: string;
@@ -12,7 +13,6 @@ interface Vacancy {
     jumlah_terdaftar: number;
     competition_ratio: number;
     kategori_posisi: string;
-    // Add other fields if needed
 }
 
 interface ResultsSectionProps {
@@ -23,24 +23,14 @@ type SortColumn = 'posisi' | 'nama_perusahaan' | 'nama_provinsi' | 'jumlah_kuota
 type SortDirection = 'asc' | 'desc' | null;
 type ViewMode = 'all' | 'favorites';
 
-// Generate unique ID for each job
 function getJobId(job: Vacancy): string {
-    return `${job.posisi}|${job.nama_perusahaan}|${job.nama_provinsi}`;
+    return job.id_posisi; // Use proper unique ID
 }
 
 function formatCompetitionRatio(value: unknown) {
     if (typeof value === "number" && Number.isFinite(value)) {
         return value.toFixed(2);
     }
-
-    if (typeof value === "string") {
-        const num = Number(value.replace(",", "."));
-        if (Number.isFinite(num)) {
-            return num.toFixed(2);
-        }
-    }
-
-    // Fallback kalau kosong / gak valid
     return "—";
 }
 
@@ -51,7 +41,6 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
     const [viewMode, setViewMode] = useState<ViewMode>('all');
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-    // Load favorites from localStorage on mount
     useEffect(() => {
         const stored = localStorage.getItem('magang-intel-favorites');
         if (stored) {
@@ -64,12 +53,10 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
         }
     }, []);
 
-    // Save favorites to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem('magang-intel-favorites', JSON.stringify(Array.from(favorites)));
     }, [favorites]);
 
-    // Toggle favorite
     const toggleFavorite = (job: Vacancy) => {
         const id = getJobId(job);
         setFavorites(prev => {
@@ -83,10 +70,8 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
         });
     };
 
-    // Check if job is favorited
     const isFavorite = (job: Vacancy) => favorites.has(getJobId(job));
 
-    // Filter by view mode
     const filteredJobs = useMemo(() => {
         if (viewMode === 'favorites') {
             return jobs.filter(job => isFavorite(job));
@@ -94,7 +79,6 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
         return jobs;
     }, [jobs, viewMode, favorites]);
 
-    // Universal sort function
     const sortedJobs = useMemo(() => {
         if (!sortColumn || !sortDirection) return filteredJobs;
 
@@ -102,17 +86,14 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
             let aVal = a[sortColumn];
             let bVal = b[sortColumn];
 
-            // Handle null/undefined
             if (aVal == null && bVal == null) return 0;
             if (aVal == null) return 1;
             if (bVal == null) return -1;
 
-            // Handle numbers
             if (typeof aVal === 'number' && typeof bVal === 'number') {
                 return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
             }
 
-            // Handle strings (case-insensitive)
             const aStr = String(aVal).toLowerCase();
             const bStr = String(bVal).toLowerCase();
 
@@ -122,10 +103,8 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
         });
     }, [filteredJobs, sortColumn, sortDirection]);
 
-    // Handle column header click
     const handleSort = (column: SortColumn) => {
         if (sortColumn === column) {
-            // Cycle: asc -> desc -> null
             if (sortDirection === 'asc') {
                 setSortDirection('desc');
             } else if (sortDirection === 'desc') {
@@ -138,18 +117,16 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
         }
     };
 
-    // Sort icon component
     const SortIcon = ({ column }: { column: SortColumn }) => {
         if (sortColumn !== column) {
-            return <ChevronsUpDown className="w-3 h-3 text-slate-400" />;
+            return <ChevronsUpDown className="w-3 h-3 text-slate-300" />;
         }
         if (sortDirection === 'asc') {
-            return <ArrowUp className="w-3 h-3 text-indigo-600" />;
+            return <ArrowUp className="w-3 h-3 text-[var(--accent-blue)]" />;
         }
-        return <ArrowDown className="w-3 h-3 text-indigo-600" />;
+        return <ArrowDown className="w-3 h-3 text-[var(--accent-blue)]" />;
     };
 
-    // ⚙️ Buat CSV sekali saja tiap jobs berubah
     const csvContent = useMemo(() => {
         if (!sortedJobs || sortedJobs.length === 0) return "";
 
@@ -161,6 +138,7 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
             "Kuota",
             "Pendaftar",
             "Rasio",
+            "Link"
         ];
 
         const rows = sortedJobs.map((job) => [
@@ -171,12 +149,12 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
             job.jumlah_kuota,
             job.jumlah_terdaftar,
             formatCompetitionRatio(job.competition_ratio),
+            `https://maganghub.kemnaker.go.id/lowongan/view/${job.id_posisi}`
         ]);
 
         const escape = (value: unknown) => {
             if (value === null || value === undefined) return "";
             const s = String(value);
-            // escape koma & kutip
             if (/[",\n]/.test(s)) {
                 return `"${s.replace(/"/g, '""')}"`;
             }
@@ -193,7 +171,6 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
 
     const handleDownload = () => {
         if (!csvContent) return;
-        // aman karena fungsi ini cuma dipanggil di client (onClick)
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -207,344 +184,309 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
     };
 
     return (
-        <section className="mt-6">
-            <div className="flex items-center justify-between mb-3">
+        <section className="mt-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                 <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                        Hasil Pencarian
-                    </p>
-                    <h3 className="text-lg font-semibold">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="w-1 h-6 bg-[var(--accent-main)] rounded-full"></span>
+                        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500">
+                            Database Lowongan
+                        </p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                         Menampilkan{" "}
-                        <span className="font-bold">
+                        <span className="text-[var(--accent-blue)] underline decoration-wavy decoration-blue-200">
                             {sortedJobs.length.toLocaleString("id-ID")}
                         </span>{" "}
-                        lowongan terbaik
+                        hasil
                     </h3>
                 </div>
 
-                {/* View Mode Tabs */}
-                <div className="flex gap-2 mb-4">
-                    <button
-                        onClick={() => setViewMode('all')}
-                        className={`px-4 py-2 text-xs font-semibold rounded-full transition ${viewMode === 'all'
-                            ? 'bg-slate-900 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                    >
-                        Semua ({jobs.length})
-                    </button>
-                    <button
-                        onClick={() => setViewMode('favorites')}
-                        className={`px-4 py-2 text-xs font-semibold rounded-full transition flex items-center gap-1.5 ${viewMode === 'favorites'
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                    >
-                        <Star className="w-3 h-3" fill={viewMode === 'favorites' ? 'currentColor' : 'none'} />
-                        Favorit ({favorites.size})
-                    </button>
-                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    {/* View Mode Tabs */}
+                    <div className="bg-slate-100/80 p-1 rounded-xl flex gap-1">
+                        <button
+                            onClick={() => setViewMode('all')}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'all'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Semua
+                        </button>
+                        <button
+                            onClick={() => setViewMode('favorites')}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${viewMode === 'favorites'
+                                ? 'bg-white text-amber-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            <Star className="w-3.5 h-3.5" fill={viewMode === 'favorites' ? 'currentColor' : 'none'} />
+                            Favorit
+                        </button>
+                    </div>
 
-                <div className="flex flex-col items-end gap-1">
                     <div className="flex gap-2">
                         <button
                             onClick={handleDownload}
-                            className="px-3 py-2 text-xs font-semibold rounded-full border border-indigo-300 text-slate-800 bg-indigo-50 hover:bg-indigo-100 transition"
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
                         >
-                            ⬇ Unduh CSV
+                            <Download className="w-4 h-4" />
+                            <span className="hidden sm:inline">CSV</span>
                         </button>
 
                         <button
                             onClick={() => setShowModal(true)}
-                            className="px-3 py-2 text-xs font-semibold rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-md transition"
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10 hover:shadow-xl transition-all active:scale-95"
                         >
-                            🔍 Lihat tabel penuh
+                            <Search className="w-4 h-4" />
+                            Lihat Tabel Penuh
                         </button>
                     </div>
-                    <p className="text-[10px] text-slate-500 italic">
-                        *Perhatian: Tunggu sebentar untuk melihat full tabel
-                    </p>
                 </div>
             </div>
 
-            {/* Tabel ringkas versi di halaman utama */}
-            <div className="overflow-x-auto rounded-2xl bg-white shadow">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
-                        <tr>
-                            <th
-                                className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('posisi')}
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    Posisi
-                                    <SortIcon column="posisi" />
-                                </div>
-                            </th>
-                            <th
-                                className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('nama_perusahaan')}
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    Perusahaan
-                                    <SortIcon column="nama_perusahaan" />
-                                </div>
-                            </th>
-                            <th
-                                className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('nama_provinsi')}
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    Provinsi
-                                    <SortIcon column="nama_provinsi" />
-                                </div>
-                            </th>
-                            <th
-                                className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('jumlah_kuota')}
-                            >
-                                <div className="flex items-center justify-end gap-1.5">
-                                    Kuota
-                                    <SortIcon column="jumlah_kuota" />
-                                </div>
-                            </th>
-                            <th
-                                className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('jumlah_terdaftar')}
-                            >
-                                <div className="flex items-center justify-end gap-1.5">
-                                    Pelamar
-                                    <SortIcon column="jumlah_terdaftar" />
-                                </div>
-                            </th>
-                            <th
-                                className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                onClick={() => handleSort('competition_ratio')}
-                            >
-                                <div className="flex items-center justify-end gap-1.5">
-                                    Rasio
-                                    <SortIcon column="competition_ratio" />
-                                </div>
-                            </th>
-                            <th className="px-4 py-3 text-center w-16">
-                                <Star className="w-3.5 h-3.5 inline-block text-slate-400" />
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedJobs.slice(0, 10).map((job, idx) => {
-                            const favorited = isFavorite(job);
-                            return (
-                                <tr
-                                    key={idx}
-                                    className={`border-t border-slate-100 transition-colors ${favorited
-                                        ? 'bg-amber-50/60 hover:bg-amber-100/60'
-                                        : 'hover:bg-indigo-50/60'
-                                        }`}
+            {/* Main Table Preview */}
+            <div className="overflow-hidden rounded-3xl bg-white/70 backdrop-blur-md shadow-card border border-white/60">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-slate-50/80 text-[10px] uppercase tracking-[0.1em] text-slate-400 font-bold border-b border-slate-100">
+                            <tr>
+                                <th
+                                    className="px-6 py-4 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                                    onClick={() => handleSort('posisi')}
                                 >
-                                    <td className="px-4 py-3 font-medium text-slate-900">
-                                        {job.posisi}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-600">{job.nama_perusahaan}</td>
-                                    <td className="px-4 py-3 text-slate-600">{job.nama_provinsi}</td>
-                                    <td className="px-4 py-3 text-right tabular-nums">
-                                        {job.jumlah_kuota}
-                                    </td>
-                                    <td className="px-4 py-3 text-right tabular-nums">
-                                        {job.jumlah_terdaftar}
-                                    </td>
-                                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                                        {formatCompetitionRatio(job.competition_ratio)}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleFavorite(job);
+                                    <div className="flex items-center gap-1.5 group-hover:text-slate-700">
+                                        Posisi
+                                        <SortIcon column="posisi" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                                    onClick={() => handleSort('nama_perusahaan')}
+                                >
+                                    <div className="flex items-center gap-1.5 group-hover:text-slate-700">
+                                        Perusahaan
+                                        <SortIcon column="nama_perusahaan" />
+                                    </div>
+                                </th>
+                                <th className="px-6 py-4 text-right">Kuota</th>
+                                <th className="px-6 py-4 text-right">Pelamar</th>
+                                <th
+                                    className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                                    onClick={() => handleSort('competition_ratio')}
+                                >
+                                    <div className="flex items-center justify-end gap-1.5 group-hover:text-slate-700">
+                                        Rasio
+                                        <SortIcon column="competition_ratio" />
+                                    </div>
+                                </th>
+                                <th className="px-6 py-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            <AnimatePresence mode="popLayout">
+                                {sortedJobs.slice(0, 10).map((job, idx) => {
+                                    const favorited = isFavorite(job);
+                                    return (
+                                        <motion.tr
+                                            layout
+                                            initial={{ opacity: 0, y: 20, scale: 0.96, filter: 'blur(10px)' }}
+                                            whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0)' }}
+                                            viewport={{ once: true, margin: "-50px" }}
+                                            transition={{
+                                                duration: 0.6,
+                                                ease: [0.32, 0.72, 0, 1], // iOS Ease
+                                                delay: idx * 0.05
                                             }}
-                                            className="p-1 rounded-full hover:bg-slate-200 transition-colors"
-                                            title={favorited ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+                                            key={job.id_posisi}
+                                            className={`group transition-colors ${favorited
+                                                ? 'bg-amber-50/50 hover:bg-amber-100/50'
+                                                : 'hover:bg-blue-50/50'
+                                                }`}
                                         >
-                                            <Star
-                                                className={`w-4 h-4 transition-all ${favorited
-                                                    ? 'fill-amber-400 text-amber-400'
-                                                    : 'text-slate-400 hover:text-amber-400'
-                                                    }`}
-                                            />
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-                {sortedJobs.length > 10 && (
-                    <p className="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">
-                        Menampilkan 10 dari {sortedJobs.length.toLocaleString("id-ID")} hasil.
-                        Klik <span className="font-semibold">"Lihat tabel penuh"</span> untuk
-                        melihat semuanya.
-                    </p>
-                )}
-            </div>
-
-            {/* ===== MODAL TABEL PENUH ===== */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl w-[95vw] max-w-6xl max-h-[85vh] flex flex-col">
-                        {/* Header modal */}
-                        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-                            <div>
-                                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                                    Tabel Lengkap
-                                </p>
-                                <h4 className="text-sm font-semibold">
-                                    {sortedJobs.length.toLocaleString("id-ID")} lowongan sesuai filter
-                                </h4>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleDownload}
-                                    className="px-3 py-1.5 text-xs font-semibold rounded-full border border-indigo-300 text-slate-800 bg-indigo-50 hover:bg-indigo-100 transition"
-                                >
-                                    ⬇ Unduh CSV
-                                </button>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-slate-900 text-white hover:bg-slate-800 transition"
-                                >
-                                    ✕ Tutup
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Body modal: scrollable table */}
-                        <div className="flex-1 overflow-auto">
-                            <table className="min-w-full text-xs md:text-sm">
-                                <thead className="bg-slate-50 text-[0.7rem] md:text-xs uppercase tracking-[0.14em] text-slate-500 sticky top-0 z-10">
-                                    <tr>
-                                        <th
-                                            className="px-3 py-2 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('posisi')}
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                Posisi
-                                                <SortIcon column="posisi" />
-                                            </div>
-                                        </th>
-                                        <th className="px-3 py-2 text-left">Kategori</th>
-                                        <th
-                                            className="px-3 py-2 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('nama_perusahaan')}
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                Perusahaan
-                                                <SortIcon column="nama_perusahaan" />
-                                            </div>
-                                        </th>
-                                        <th
-                                            className="px-3 py-2 text-left cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('nama_provinsi')}
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                Provinsi
-                                                <SortIcon column="nama_provinsi" />
-                                            </div>
-                                        </th>
-                                        <th
-                                            className="px-3 py-2 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('jumlah_kuota')}
-                                        >
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                Kuota
-                                                <SortIcon column="jumlah_kuota" />
-                                            </div>
-                                        </th>
-                                        <th
-                                            className="px-3 py-2 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('jumlah_terdaftar')}
-                                        >
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                Pelamar
-                                                <SortIcon column="jumlah_terdaftar" />
-                                            </div>
-                                        </th>
-                                        <th
-                                            className="px-3 py-2 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleSort('competition_ratio')}
-                                        >
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                Rasio
-                                                <SortIcon column="competition_ratio" />
-                                            </div>
-                                        </th>
-                                        <th className="px-3 py-2 text-center w-12">
-                                            <Star className="w-3 h-3 inline-block text-slate-400" />
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sortedJobs.map((job, idx) => {
-                                        const favorited = isFavorite(job);
-                                        return (
-                                            <tr
-                                                key={idx}
-                                                className={`border-t border-slate-100 transition-colors ${favorited
-                                                        ? 'bg-amber-50/70 hover:bg-amber-100/70'
-                                                        : 'hover:bg-indigo-50/70'
-                                                    }`}
-                                            >
-                                                <td className="px-3 py-2 font-medium text-slate-900">
-                                                    {job.posisi}
-                                                </td>
-                                                <td className="px-3 py-2 text-slate-600">
-                                                    {job.kategori_posisi}
-                                                </td>
-                                                <td className="px-3 py-2 text-slate-600">
-                                                    {job.nama_perusahaan}
-                                                </td>
-                                                <td className="px-3 py-2 text-slate-600">
-                                                    {job.nama_provinsi}
-                                                </td>
-                                                <td className="px-3 py-2 text-right tabular-nums">
-                                                    {job.jumlah_kuota}
-                                                </td>
-                                                <td className="px-3 py-2 text-right tabular-nums">
-                                                    {job.jumlah_terdaftar}
-                                                </td>
-                                                <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                                            <td className="px-6 py-4 font-bold text-slate-800">
+                                                <div className="line-clamp-2 leading-relaxed">{job.posisi}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600">
+                                                <div className="line-clamp-1">{job.nama_perusahaan}</div>
+                                                <div className="text-[10px] text-slate-400 mt-1 uppercase tracking-wide">{job.nama_provinsi}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums text-slate-600 font-mono tracking-tight">
+                                                {job.jumlah_kuota}
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums text-slate-600 font-mono tracking-tight">
+                                                {job.jumlah_terdaftar}
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums font-bold">
+                                                <span className={`
+                                                px-2 py-1 rounded-lg text-xs
+                                                ${job.competition_ratio <= 2 ? "bg-emerald-100 text-emerald-700" :
+                                                        job.competition_ratio <= 10 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}
+                                            `}>
                                                     {formatCompetitionRatio(job.competition_ratio)}
-                                                </td>
-                                                <td className="px-3 py-2 text-center">
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             toggleFavorite(job);
                                                         }}
-                                                        className="p-0.5 rounded-full hover:bg-slate-200 transition-colors"
+                                                        className={`p-2 rounded-full transition-all active:scale-95 ${favorited ? 'bg-amber-100 text-amber-500' : 'bg-slate-100 text-slate-400 hover:bg-amber-50 hover:text-amber-400'}`}
                                                         title={favorited ? 'Hapus dari favorit' : 'Tambah ke favorit'}
                                                     >
-                                                        <Star
-                                                            className={`w-3.5 h-3.5 transition-all ${favorited
-                                                                    ? 'fill-amber-400 text-amber-400'
-                                                                    : 'text-slate-400 hover:text-amber-400'
-                                                                }`}
-                                                        />
+                                                        <Star className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`} />
                                                     </button>
+                                                    <a
+                                                        href={`https://maganghub.kemnaker.go.id/lowongan/view/${job.id_posisi}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 rounded-full bg-slate-100 text-slate-400 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-blue)] transition-all active:scale-95"
+                                                        title="Lihat Detail"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    );
+                                })}
+                            </AnimatePresence>
+                        </tbody>
+                    </table>
+                </div>
+                {sortedJobs.length > 10 && (
+                    <div className="p-4 bg-slate-50/50 backdrop-blur-sm border-t border-slate-100 text-center">
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="text-xs font-bold text-[var(--accent-blue)] hover:text-blue-700 hover:underline transition-all"
+                        >
+                            Lihat {sortedJobs.length - 10} lowongan lainnya...
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* ===== MODAL TABEL PENUH ===== */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#FDFBF7] rounded-[2rem] shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+                        {/* Header modal */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
+                            <div>
+                                <h4 className="text-lg font-bold text-slate-900">
+                                    Tabel Lengkap
+                                </h4>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                    {sortedJobs.length.toLocaleString("id-ID")} Lowongan
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body modal: scrollable table */}
+                        <div className="flex-1 overflow-auto bg-white custom-scrollbar">
+                            <table className="min-w-full text-xs md:text-sm">
+                                <thead className="bg-slate-50/90 backdrop-blur-sm text-[10px] uppercase tracking-widest text-slate-400 font-bold sticky top-0 z-10 border-b border-slate-100 shadow-sm">
+                                    <tr>
+                                        <th className="px-4 py-3 text-center w-12">★</th>
+                                        <th
+                                            className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors group"
+                                            onClick={() => handleSort('posisi')}
+                                        >
+                                            <div className="flex items-center gap-1.5 group-hover:text-slate-700">
+                                                Posisi <SortIcon column="posisi" />
+                                            </div>
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors group"
+                                            onClick={() => handleSort('nama_perusahaan')}
+                                        >
+                                            <div className="flex items-center gap-1.5 group-hover:text-slate-700">
+                                                Perusahaan <SortIcon column="nama_perusahaan" />
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-3 text-left hidden md:table-cell">Provinsi</th>
+                                        <th
+                                            className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors group"
+                                            onClick={() => handleSort('jumlah_kuota')}
+                                        >
+                                            <div className="flex items-center justify-end gap-1.5 group-hover:text-slate-700">
+                                                Kuota <SortIcon column="jumlah_kuota" />
+                                            </div>
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors group"
+                                            onClick={() => handleSort('competition_ratio')}
+                                        >
+                                            <div className="flex items-center justify-end gap-1.5 group-hover:text-slate-700">
+                                                Rasio <SortIcon column="competition_ratio" />
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-3 text-center">Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {sortedJobs.map((job) => {
+                                        const favorited = isFavorite(job);
+                                        return (
+                                            <tr
+                                                key={job.id_posisi}
+                                                className={`transition-colors text-slate-600 hover:text-slate-900 ${favorited
+                                                    ? 'bg-amber-50/50 hover:bg-amber-100/50'
+                                                    : 'hover:bg-blue-50/30'
+                                                    }`}
+                                            >
+                                                <td className="px-4 py-3 text-center">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleFavorite(job);
+                                                        }}
+                                                        className="text-slate-300 hover:text-amber-400 transition-colors"
+                                                    >
+                                                        <Star className={`w-4 h-4 ${favorited ? 'fill-amber-400 text-amber-400' : ''}`} />
+                                                    </button>
+                                                </td>
+                                                <td className="px-4 py-3 font-medium">
+                                                    {job.posisi}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    {job.nama_perusahaan}
+                                                </td>
+                                                <td className="px-4 py-3 hidden md:table-cell text-slate-500">
+                                                    {job.nama_provinsi}
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums font-mono text-slate-500">
+                                                    {job.jumlah_kuota}
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums font-bold">
+                                                    <span className={`${job.competition_ratio <= 10 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                                                        {formatCompetitionRatio(job.competition_ratio)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <a
+                                                        href={`https://maganghub.kemnaker.go.id/lowongan/view/${job.id_posisi}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-400 hover:text-[var(--accent-blue)] hover:bg-blue-50 transition-colors"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
                                                 </td>
                                             </tr>
                                         );
                                     })}
                                 </tbody>
                             </table>
-                        </div>
-
-                        {/* Footer modal kecil */}
-                        <div className="px-5 py-2 border-t border-slate-100 text-[0.72rem] text-slate-500 flex justify-between">
-                            <span>
-                                Tip: Klik header kolom untuk sort, lalu unduh CSV untuk
-                                dianalisis di Excel / Python.
-                            </span>
-                            <span>Magang Intel · v0.1</span>
                         </div>
                     </div>
                 </div>
