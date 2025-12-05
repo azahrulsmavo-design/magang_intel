@@ -17,10 +17,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-          fetch-depth: 0       # perlu supaya bisa rebase kalau perlu
-          ref: main            # pastikan kita kerja di branch main
+          fetch-depth: 0
+          ref: main
 
-      # STEP: Sync dulu dengan remote main (masih bersih di sini)
       - name: Sync with origin/main
         run: |
           git config user.name "github-actions"
@@ -38,7 +37,6 @@ jobs:
           pip install -r requirements.txt || true
           pip install pandas pyarrow requests pyyaml
 
-      # 1) Jalankan pipeline: fetch -> prepare -> score
       - name: Run fetch + prepare + score
         env:
           PYTHONUNBUFFERED: "1"
@@ -47,7 +45,6 @@ jobs:
           python -m src.prepare
           python -m src.score || echo "[WARN] score.py optional"
 
-      # 2) Arsip RAW jadi zip + upload artifact (retensi 30 hari)
       - name: Archive RAW to zip
         run: |
           python - <<'PY'
@@ -68,12 +65,10 @@ jobs:
           path: data/raw/run_*.zip
           retention-days: 30
 
-      # 3) Convert Parquet to JSON untuk web
       - name: Convert data to JSON
         run: |
           python web/scripts/convert_data.py
 
-      # 4) Commit & Push Data (Triggers Vercel)
       - name: Commit and Push Data
         run: |
           git config user.name "github-actions"
