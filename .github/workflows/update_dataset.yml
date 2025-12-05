@@ -7,16 +7,18 @@ on:
 
 permissions:
   contents: write
-      
+
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout pipeline repo
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0       # penting supaya bisa pull/rebase
+          ref: main            # pastikan kita kerja di branch main
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -59,7 +61,7 @@ jobs:
           path: data/raw/run_*.zip
           retention-days: 30
 
-      # 3) Convert Parquet to JSON for Web
+      # 3) Convert Parquet to JSON untuk web
       - name: Convert data to JSON
         run: |
           python web/scripts/convert_data.py
@@ -69,12 +71,15 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+
+          # pastikan dulu main kita up-to-date
+          git pull --rebase origin main
+
           git add data/clean/vacancies.parquet web/public/data.json
           
-          # Check if there are changes
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Auto-update data ($(date -u +'%Y-%m-%d %H:%M:%S'))"
-            git push origin HEAD:${{ github.ref }}
+            git push origin main
           fi
