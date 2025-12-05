@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp, Building2, MapPin, Users, Briefcase, ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { enrichCategory } from "@/utils/category";
 
 interface Vacancy {
     posisi: string;
@@ -29,7 +30,11 @@ export default function LaporanPage() {
         fetch("/data.json")
             .then((res) => res.json())
             .then((json) => {
-                setData(json);
+                const enrichedData = json.map((item: any) => ({
+                    ...item,
+                    kategori_posisi: enrichCategory(item.posisi, item.kategori_posisi)
+                }));
+                setData(enrichedData);
                 setLoading(false);
             })
             .catch((err) => {
@@ -428,10 +433,10 @@ export default function LaporanPage() {
                                         </td>
                                         <td className="px-4 py-3 text-right tabular-nums">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${stat.competition > 10
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : stat.competition > 5
-                                                        ? 'bg-amber-100 text-amber-700'
-                                                        : 'bg-emerald-100 text-emerald-700'
+                                                ? 'bg-red-100 text-red-700'
+                                                : stat.competition > 5
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-emerald-100 text-emerald-700'
                                                 }`}>
                                                 {stat.competition.toFixed(2)}
                                             </span>
@@ -487,10 +492,10 @@ export default function LaporanPage() {
                                         </td>
                                         <td className="px-4 py-3 text-right tabular-nums">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${company.competition > 10
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : company.competition > 5
-                                                        ? 'bg-amber-100 text-amber-700'
-                                                        : 'bg-emerald-100 text-emerald-700'
+                                                ? 'bg-red-100 text-red-700'
+                                                : company.competition > 5
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-emerald-100 text-emerald-700'
                                                 }`}>
                                                 {company.competition.toFixed(2)}
                                             </span>

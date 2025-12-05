@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Filters } from '@/components/Filters';
 import { Stats } from '@/components/Stats';
+import { enrichCategory } from "@/utils/category";
 import { Charts } from '@/components/Charts';
 import { Github, X, Filter as FilterIcon, Search, BarChart3 } from "lucide-react";
 import MagangHubInfo from '@/components/MagangHubInfo';
@@ -44,34 +45,6 @@ export default function Home() {
         .then(res => res.json())
         .then(data => {
           // --- ENRICH CATEGORIES START ---
-          const enrichCategory = (pos: string, currentCat: string) => {
-            const p = pos.toLowerCase();
-            // Prioritize keywords to create richer categories
-            if (p.includes('android') || p.includes('ios') || p.includes('mobile') || p.includes('flutter') || p.includes('react native')) return 'Mobile Development';
-            if (p.includes('frontend') || p.includes('backend') || p.includes('full stack') || p.includes('web') || p.includes('software') || p.includes('website')) return 'Web & Software Dev';
-            if (p.includes('ui/ux') || p.includes('product design') || p.includes('user interface')) return 'UI/UX Design';
-            if (p.includes('data') || p.includes('analyst') || p.includes('science') || p.includes('ai') || p.includes('machine learning')) return 'Data & AI';
-            if (p.includes('network') || p.includes('security') || p.includes('cyber') || p.includes('infra') || p.includes('sysadmin')) return 'Network & Security';
-
-            if (p.includes('social media') || p.includes('content') || p.includes('copywrit') || p.includes('creative')) return 'Content & Social Media';
-            if (p.includes('marketing') || p.includes('market') || p.includes('seo') || p.includes('brand') || p.includes('digital')) return 'Marketing & Branding';
-            if (p.includes('sales') || p.includes('business dev') || p.includes('account')) return 'Sales & BizDev';
-
-            if (p.includes('finance') || p.includes('account') || p.includes('tax') || p.includes('pajak') || p.includes('audit')) return 'Finance & Accounting';
-            if (p.includes('admin') || p.includes('sekretaris') || p.includes('arsip')) return 'Administration';
-            if (p.includes('hr') || p.includes('human') || p.includes('recruit') || p.includes('talent')) return 'Human Resources';
-
-            if (p.includes('graphic') || p.includes('desain grafis') || p.includes('illustrator') || p.includes('video') || p.includes('motion') || p.includes('editor')) return 'Creative Design & Multimedia';
-
-            if (p.includes('operas') || p.includes('logistik') || p.includes('warehouse') || p.includes('supply')) return 'Operations & Logistics';
-            if (p.includes('hukum') || p.includes('legal')) return 'Legal';
-
-            // If no keyword match, keep existing or fallback to Lainnya
-            if (currentCat && currentCat !== 'Lainnya' && currentCat !== '') return currentCat;
-
-            return 'Lainnya';
-          };
-
           const enrichedData = data.map((item: any) => ({
             ...item,
             kategori_posisi: enrichCategory(item.posisi, item.kategori_posisi)

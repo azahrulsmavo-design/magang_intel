@@ -270,8 +270,24 @@ export function ResultsSection({ jobs }: ResultsSectionProps) {
                                         <SortIcon column="nama_perusahaan" />
                                     </div>
                                 </th>
-                                <th className="px-6 py-4 text-right">Kuota</th>
-                                <th className="px-6 py-4 text-right">Pelamar</th>
+                                <th
+                                    className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                                    onClick={() => handleSort('jumlah_kuota')}
+                                >
+                                    <div className="flex items-center justify-end gap-1.5 group-hover:text-slate-700">
+                                        Kuota
+                                        <SortIcon column="jumlah_kuota" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                                    onClick={() => handleSort('jumlah_terdaftar')}
+                                >
+                                    <div className="flex items-center justify-end gap-1.5 group-hover:text-slate-700">
+                                        Pelamar
+                                        <SortIcon column="jumlah_terdaftar" />
+                                    </div>
+                                </th>
                                 <th
                                     className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition-colors select-none group"
                                     onClick={() => handleSort('competition_ratio')}
