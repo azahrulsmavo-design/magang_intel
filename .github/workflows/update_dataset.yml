@@ -17,8 +17,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-          fetch-depth: 0       # penting supaya bisa pull/rebase
+          fetch-depth: 0       # perlu supaya bisa rebase kalau perlu
           ref: main            # pastikan kita kerja di branch main
+
+      # STEP: Sync dulu dengan remote main (masih bersih di sini)
+      - name: Sync with origin/main
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git pull --rebase origin main || echo "Nothing to rebase"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -71,9 +78,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-
-          # pastikan dulu main kita up-to-date
-          git pull --rebase origin main
 
           git add data/clean/vacancies.parquet web/public/data.json
           
