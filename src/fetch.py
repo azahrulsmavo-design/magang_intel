@@ -62,7 +62,7 @@ def main():
     base_params = cfg["source"].get("params", {}) or {}
     headers     = cfg["source"].get("headers", {}) or {}
 
-    timeout_s       = int(cfg.get("run", {}).get("timeout_s", 30))
+    timeout_s       = int(cfg.get("run", {}).get("timeout_s", 60))
     max_retries     = int(cfg.get("run", {}).get("max_retries", 3))
     retry_backoff_s = int(cfg.get("run", {}).get("retry_backoff_s", 5))
     sleep_ms        = int(cfg.get("run", {}).get("sleep_ms", 200))
