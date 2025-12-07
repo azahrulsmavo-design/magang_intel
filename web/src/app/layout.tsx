@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/person.svg',
   },
+  other: {
+    "google-site-verification": "kbKoahOWVWWj7WtRmYZb8Fgb7JRg6tWSHi3S6GmpAAk",
+  },
 };
 
 export default function RootLayout({
